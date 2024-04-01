@@ -29,7 +29,7 @@ export default function App() {
 
   return (
     <View style={[styles.container, darkMode ? styles.darkMode : null]}>
-      <View style={styles.header}>
+      <View style={styles.topHeader}>
         <Text style={[styles.headerText, headerTextStyle]}>Quran Explorer</Text>
         <TouchableOpacity style={styles.modeButton} onPress={toggleDarkMode}>
           <Text>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
@@ -59,11 +59,12 @@ const styles = StyleSheet.create({
   darkMode: {
     backgroundColor: 'black',
   },
-  header: {
+  topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+    paddingHorizontal: 10,
   },
   headerText: {
     fontSize: 24,
