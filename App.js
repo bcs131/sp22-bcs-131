@@ -1,169 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
-import { initializeApp } from '@firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from '@firebase/auth';
+import React, { useState } from 'react';
+import { StyleSheet, View, TextInput, Text, FlatList, TouchableOpacity } from 'react-native';
+import QuranData from './QuranData';
 
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAJZVnRpxu37-2GPA_Xl3d4w3ukykiaX5k",
-  authDomain: "fir-demo-5f35b.firebaseapp.com",
-  projectId: "fir-demo-5f35b",
-  storageBucket: "fir-demo-5f35b.appspot.com",
-  messagingSenderId: "294206437312",
-  appId: "1:294206437312:web:8276f32d948f6ab626ba25",
-  measurementId: "G-HVTTFYML8Y"
-};
-
-const app = initializeApp(firebaseConfig);
-
-const AuthScreen = ({email, setPassword, setEmail, password,isLogin, setIsLogin, handleAuthentication}) => {
-  return (
-    <View style={styles.authContainer}>
-      <Text style={styles.title}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
-      
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        secureTextEntry
-      />
-
-        <View style={styles.buttonContainer}>
-           <Button title={isLogin ? 'Sign In' : 'Sign Up'} onPress={handleAuthentication} color="#3498db" />
-        </View>
-
-        <View style={styles.bottomContainer}>
-           <Text style={styles.toggleText} onPress={() => setIsLogin(!isLogin)}>
-              {isLogin ? 'Need an account? Sign Up' : 'Already have an account? Sign In'}
-           </Text>
-        </View>
-
-
-    </View>
-  );
-}
-
-const AuthenticatedScreen = ({ user, handleAuthentication }) => {
-  return (
-    <View style={styles.authContainer}>
-      <Text style={styles.title}>Welcome</Text>
-      <Text style={styles.emailText}>{user.email}</Text>
-      <Button title="Logout" onPress={handleAuthentication} color="#e74c3c" />
-    </View>
-  );
-};
-
-export default App = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [user, setUser] = useState(null); // Track user authentication state
-  const [isLogin, setIsLogin] = useState(true);
-
-  const auth = getAuth(app);
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
-
-  const handleAuthentication = async () => {
-    try {
-      if (user) {
-        // If user is already authenticated, log out
-        console.log('User logged out successfully!');
-        await signOut(auth);
-      } else {
-        // Sign in or sign up
-        if (isLogin) {
-          // Sign in
-          await signInWithEmailAndPassword(auth, email, password);
-          console.log('User signed in successfully!');
-        } else {
-          // Sign up
-          await createUserWithEmailAndPassword(auth, email, password);
-          console.log('User created successfully!');
-        }
-      }
-    } catch (error) {
-      console.error('Authentication error:', error.message);
-    }
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
   };
 
+  const filteredSurahs = QuranData.surahNames.filter((surah) =>
+    surah.english.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const headerTextStyle = darkMode ? styles.headerTextDark : styles.headerText;
+  const searchInputStyle = darkMode ? styles.searchInputDark : styles.searchInput;
+
+  const renderItem = ({ item, index }) => (
+    <TouchableOpacity style={styles.surah}>
+      <Text style={styles.surahNumber}>{index + 1}</Text>
+      <View style={styles.surahDetails}>
+        <Text style={[styles.surahText, styles.englishText]}>{item.english}</Text>
+        <Text style={[styles.surahText, styles.arabicText]}>{item.arabic}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {user ? (
-        // Show user's email if user is authenticated
-        <AuthenticatedScreen user={user} handleAuthentication={handleAuthentication} />
-      ) : (
-        // Show sign-in or sign-up form if user is not authenticated
-        <AuthScreen
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          isLogin={isLogin}
-          setIsLogin={setIsLogin}
-          handleAuthentication={handleAuthentication}
-        />
-      )}
-    </ScrollView>
+    <View style={[styles.container, darkMode ? styles.darkMode : null]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerText, headerTextStyle]}>Quran Explorer</Text>
+        <TouchableOpacity style={styles.modeButton} onPress={toggleDarkMode}>
+          <Text>{darkMode ? "Light Mode" : "Dark Mode"}</Text>
+        </TouchableOpacity>
+      </View>
+      <TextInput
+        style={[styles.searchInput, searchInputStyle]}
+        placeholder="Search Surah"
+        value={searchQuery}
+        onChangeText={(text) => setSearchQuery(text)}
+      />
+      <FlatList
+        data={filteredSurahs}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => index.toString()}
+      />
+    </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 10,
+  },
+  darkMode: {
+    backgroundColor: 'black',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f0f0f0',
+    marginBottom: 10,
   },
-  authContainer: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    elevation: 3,
-  },
-  title: {
+  headerText: {
     fontSize: 24,
-    marginBottom: 16,
-    textAlign: 'center',
+    fontWeight: 'bold',
+    color: 'black',
   },
-  input: {
-    height: 40,
-    borderColor: '#ddd',
+  headerTextDark: {
+    color: 'white',
+  },
+  modeButton: {
+    padding: 10,
+    backgroundColor: 'lightgray',
+    borderRadius: 5,
+  },
+  searchInput: {
     borderWidth: 1,
-    marginBottom: 16,
-    padding: 8,
-    borderRadius: 4,
+    borderColor: 'gray',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+    color: 'black',
   },
-  buttonContainer: {
-    marginBottom: 16,
+  searchInputDark: {
+    color: 'white',
+    backgroundColor: 'darkgray',
   },
-  toggleText: {
-    color: '#3498db',
-    textAlign: 'center',
+  surah: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginBottom: 5,
+    backgroundColor: 'lightblue',
+    borderRadius: 5,
   },
-  bottomContainer: {
-    marginTop: 20,
+  surahNumber: {
+    color: 'white',
+    marginRight: 10,
   },
-  emailText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 20,
+  surahDetails: {
+    flex: 1,
+    flexDirection: 'column', 
+    justifyContent: 'center',
+  },
+  surahText: {
+    color: 'white',
+  },
+  englishText: {
+    textAlign: 'center', 
+    marginBottom: 5, 
+  },
+  arabicText: {
+    textAlign: 'center', 
   },
 });
